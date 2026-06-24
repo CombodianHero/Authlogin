@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AuthSystem — Live Preview</title>
+<style>
+/* ── Reset & Vars ─────────────────────────────────── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a1a;--bg2:#0f0f2a;--card:rgba(18,18,40,.96);
+  --inp:rgba(255,255,255,.05);--inp-f:rgba(99,102,241,.09);
+  --brd:rgba(255,255,255,.09);--brd-f:rgba(99,102,241,.65);
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#475569;
+  --acc:#6366f1;--acc2:#8b5cf6;--acc3:#a855f7;
+  --ok:#10b981;--err:#ef4444;--warn:#f59e0b;
+  --grad:linear-gradient(135deg,#6366f1,#8b5cf6,#a855f7);
+  --card-grad:linear-gradient(135deg,rgba(18,18,40,.97),rgba(12,12,32,.99));
+  --sh:0 25px 60px rgba(0,0,0,.55),0 0 40px rgba(99,102,241,.12);
+}
+[data-theme=light]{
+  --bg:#eef2ff;--bg2:#e0e7ff;--card:rgba(255,255,255,.97);
+  --inp:rgba(99,102,241,.04);--inp-f:rgba(99,102,241,.07);
+  --brd:rgba(99,102,241,.15);--brd-f:rgba(99,102,241,.6);
+  --t1:#0f172a;--t2:#475569;--t3:#94a3b8;
+  --card-grad:linear-gradient(135deg,rgba(255,255,255,.98),rgba(250,250,255,1));
+  --sh:0 25px 60px rgba(99,102,241,.12),0 0 40px rgba(99,102,241,.06);
+}
+html{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px}
+body{min-height:100vh;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── Layout ───────────────────────────────────────── */
+.scene{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:32px 16px;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 20% 20%,rgba(99,102,241,.18) 0%,transparent 60%),
+             radial-gradient(ellipse at 80% 80%,rgba(168,85,247,.14) 0%,transparent 60%),
+             var(--bg);
+}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.22;pointer-events:none;z-index:0}
+.orb1{width:500px;height:500px;background:radial-gradient(#6366f1,transparent);top:-120px;left:-150px;animation:f1 9s ease-in-out infinite}
+.orb2{width:420px;height:420px;background:radial-gradient(#a855f7,transparent);bottom:-100px;right:-120px;animation:f2 11s ease-in-out infinite}
+@keyframes f1{0%,100%{transform:translate(0,0)}50%{transform:translate(35px,25px)}}
+@keyframes f2{0%,100%{transform:translate(0,0)}50%{transform:translate(-28px,32px)}}
+
+/* ── Card ─────────────────────────────────────────── */
+.card{
+  width:100%;max-width:460px;background:var(--card-grad);
+  border:1px solid var(--brd);border-radius:24px;padding:44px 40px;
+  box-shadow:var(--sh);backdrop-filter:blur(24px);position:relative;z-index:1;
+  animation:up .4s cubic-bezier(.16,1,.3,1);
+}
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.card.wide{max-width:500px}
+
+/* ── Logo ─────────────────────────────────────────── */
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:32px}
+.logo-icon{width:42px;height:42px;background:var(--grad);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 14px rgba(99,102,241,.4)}
+.logo-text{font-size:20px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
+
+/* ── Headings ─────────────────────────────────────── */
+.hd{margin-bottom:26px}
+.hd h1{font-size:26px;font-weight:800;color:var(--t1);line-height:1.2;margin-bottom:5px;letter-spacing:-.5px}
+.hd p{font-size:14px;color:var(--t2);line-height:1.5}
+
+/* ── Form ─────────────────────────────────────────── */
+.fg{margin-bottom:17px;position:relative}
+label.lbl{display:block;font-size:12.5px;font-weight:600;color:var(--t2);margin-bottom:6px;letter-spacing:.02em}
+.iw{position:relative}
+input.fi{
+  width:100%;padding:13px 16px;background:var(--inp);border:1.5px solid var(--brd);
+  border-radius:12px;color:var(--t1);font-size:14px;font-family:inherit;
+  transition:border .18s,background .18s,box-shadow .18s;outline:none;
+}
+input.fi:focus{border-color:var(--brd-f);background:var(--inp-f);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+input.fi.ico{padding-left:43px}
+input.fi.err{border-color:var(--err);box-shadow:0 0 0 3px rgba(239,68,68,.1)}
+input.fi.ok{border-color:var(--ok)}
+input.fi::placeholder{color:var(--t3)}
+.ii{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:15px;pointer-events:none;user-select:none}
+.pt{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;padding:4px;font-size:15px;transition:color .18s;display:flex;align-items:center}
+.pt:hover{color:var(--t1)}
+.fe{display:flex;align-items:center;gap:5px;color:var(--err);font-size:12px;margin-top:5px}
+
+/* ── Password Strength ────────────────────────────── */
+.ps{margin-top:10px}
+.ps-bar{height:4px;background:var(--brd);border-radius:99px;overflow:hidden;margin-bottom:8px}
+.ps-fill{height:100%;border-radius:99px;transition:width .4s,background .4s}
+.ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ps-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);transition:color .2s}
+.ps-item.met{color:var(--ok)}
+
+/* ── Buttons ──────────────────────────────────────── */
+.btn{width:100%;padding:13px 20px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;letter-spacing:.01em}
+.btn-p{background:var(--grad);color:#fff;box-shadow:0 4px 15px rgba(99,102,241,.35)}
+.btn-p:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 22px rgba(99,102,241,.45)}
+.btn-p:active:not(:disabled){transform:none}
+.btn-g{background:var(--card);color:var(--t1);border:1.5px solid var(--brd)}
+.btn-g:hover:not(:disabled){background:var(--inp-f);border-color:var(--brd-f);transform:translateY(-1px)}
+.btn-s{background:var(--inp);color:var(--t1);border:1.5px solid var(--brd)}
+.btn-s:hover:not(:disabled){background:var(--inp-f);border-color:var(--brd-f)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+.spin{width:17px;height:17px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .65s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.sp-acc{border:2px solid var(--brd);border-top-color:var(--acc)}
+
+/* ── Divider ──────────────────────────────────────── */
+.div{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--t3);font-size:12px;font-weight:500}
+.div::before,.div::after{content:'';flex:1;height:1px;background:var(--brd)}
+
+/* ── Checkbox ─────────────────────────────────────── */
+.cg{display:flex;align-items:flex-start;gap:9px;cursor:pointer;user-select:none}
+.cg input{display:none}
+.cc{width:18px;height:18px;min-width:18px;border:1.5px solid var(--brd);border-radius:5px;background:var(--inp);display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:1px}
+.cg input:checked+.cc{background:var(--grad);border-color:transparent}
+.ck{color:#fff;font-size:11px;display:none;font-weight:700}
+.cg input:checked+.cc .ck{display:block}
+.cl{font-size:13px;color:var(--t2);line-height:1.4}
+.cl a{color:var(--acc);text-decoration:none}
+.cl a:hover{text-decoration:underline}
+
+/* ── Footer ───────────────────────────────────────── */
+.af{text-align:center;margin-top:22px;font-size:13px;color:var(--t2)}
+.af a,.link{color:var(--acc);font-weight:600;text-decoration:none;cursor:pointer}
+.af a:hover,.link:hover{text-decoration:underline}
+
+/* ── Alert ────────────────────────────────────────── */
+.alert{display:flex;align-items:flex-start;gap:9px;padding:11px 15px;border-radius:10px;font-size:13px;margin-bottom:18px;line-height:1.5}
+.ae{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
+.as{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7}
+.ai{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);color:#a5b4fc}
+
+/* ── OTP ──────────────────────────────────────────── */
+.otp-wrap{display:flex;gap:9px;justify-content:center;margin:22px 0}
+.oi{width:52px;height:60px;text-align:center;font-size:22px;font-weight:700;font-family:'Courier New',monospace;background:var(--inp);border:1.5px solid var(--brd);border-radius:12px;color:var(--t1);outline:none;transition:all .2s;caret-color:var(--acc)}
+.oi:focus{border-color:var(--brd-f);background:var(--inp-f);box-shadow:0 0 0 3px rgba(99,102,241,.14);transform:scale(1.04)}
+.oi.filled{border-color:var(--acc)}
+.oi.oerr{border-color:var(--err)}
+
+/* ── Timer ────────────────────────────────────────── */
+.timer{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--t2);margin-bottom:14px}
+.tv{font-weight:700;font-family:monospace;color:var(--acc);font-size:14px}
+.texp{color:var(--err)!important}
+
+/* ── Dashboard ────────────────────────────────────── */
+.dash{min-height:100vh;background:var(--bg);padding:24px 16px;position:relative;
+  background:radial-gradient(ellipse at 80% 10%,rgba(99,102,241,.1) 0%,transparent 55%),var(--bg)}
+.dash-wrap{max-width:860px;margin:0 auto}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;padding:0 4px}
+.dc{background:var(--card-grad);border:1px solid var(--brd);border-radius:20px;padding:26px;margin-bottom:18px;box-shadow:var(--sh);backdrop-filter:blur(12px);animation:up .4s cubic-bezier(.16,1,.3,1)}
+.welcome{background:linear-gradient(135deg,rgba(99,102,241,.13),rgba(168,85,247,.09))!important;border-color:rgba(99,102,241,.28)!important}
+.ph{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.av-wrap{position:relative}
+.av{width:76px;height:76px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;overflow:hidden;border:3px solid var(--brd)}
+.av img{width:100%;height:100%;object-fit:cover}
+.vbadge{position:absolute;bottom:0;right:0;background:var(--ok);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid var(--card)}
+.pi .nm{font-size:21px;font-weight:800;color:var(--t1)}
+.pi .un{font-size:13px;color:var(--acc);font-weight:500}
+.pi .em{font-size:13px;color:var(--t2);margin-top:2px}
+.badges{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600}
+.bv{background:rgba(16,185,129,.1);color:var(--ok);border:1px solid rgba(16,185,129,.2)}
+.bg2{background:rgba(99,102,241,.1);color:var(--acc);border:1px solid rgba(99,102,241,.2)}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.sc{background:var(--inp);border:1px solid var(--brd);border-radius:13px;padding:15px;text-align:center;transition:all .2s;cursor:default}
+.sc:hover{border-color:var(--brd-f);background:var(--inp-f)}
+.sicon{font-size:22px;margin-bottom:7px}
+.slbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.07em}
+.sval{font-size:14px;font-weight:600;color:var(--t1);margin-top:3px}
+.stitle{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.row{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--inp);border-radius:10px;border:1px solid var(--brd)}
+.rlbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
+.rval{font-size:13.5px;color:var(--t1);font-weight:500;margin-top:2px}
+
+/* ── Nav Tabs ─────────────────────────────────────── */
+.tabs{display:flex;gap:4px;background:var(--inp);border:1px solid var(--brd);border-radius:12px;padding:4px;margin-bottom:26px}
+.tab{flex:1;padding:9px 12px;border:none;background:none;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--t2);cursor:pointer;transition:all .2s;font-family:inherit}
+.tab.active{background:var(--grad);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3)}
+.tab:hover:not(.active){color:var(--t1);background:var(--inp-f)}
+
+/* ── Theme + page toggles ─────────────────────────── */
+.ttoggle{position:fixed;top:18px;right:18px;z-index:99;background:var(--card);border:1.5px solid var(--brd);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:all .2s;backdrop-filter:blur(12px);box-shadow:var(--sh)}
+.ttoggle:hover{transform:scale(1.06);border-color:var(--brd-f)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.card{padding:30px 22px}.oi{width:42px;height:52px;font-size:18px}.fg-row{grid-template-columns:1fr}.sg{grid-template-columns:1fr}.ph{flex-direction:column;text-align:center}}
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+// ── Tiny state machine ──────────────────────────────────────────────────────
+const state = {
+  theme: 'dark',
+  page: 'login',
+  user: null,
+  otpValues: ['','','','','',''],
+  otpTimer: 300,
+  otpInterval: null,
+  loading: false,
+  showPass: false,
+  showConfirm: false,
+  passValue: '',
+  loginError: '',
+  registerError: '',
+  otpError: '',
+  forgotSent: false,
+  resetDone: false,
+};
+
+// ── Fake credential store ──────────────────────────────────────────────────
+const FAKE_USER = {
+  fullName:'Alex Johnson',username:'alexjohnson',email:'alex@example.com',
+  profilePicture:null,isEmailVerified:true,authProvider:'local',
+  lastLogin:new Date().toISOString(),createdAt:'2024-06-01T00:00:00Z',
+};
+
+// ── Password checks ────────────────────────────────────────────────────────
+const pwdChecks = [
+  {label:'8+ characters', test: v => v.length >= 8},
+  {label:'Uppercase letter', test: v => /[A-Z]/.test(v)},
+  {label:'Lowercase letter', test: v => /[a-z]/.test(v)},
+  {label:'Number', test: v => /[0-9]/.test(v)},
+  {label:'Special character', test: v => /[!@#$%^&*(),.?":{}|<>]/.test(v)},
+];
+const strengthColors = ['#ef4444','#f97316','#f59e0b','#84cc16','#10b981'];
+const strengthLabels = ['Too weak','Weak','Fair','Good','Strong'];
+
+// ── Core render ────────────────────────────────────────────────────────────
+function render() {
+  document.getElementById('root').innerHTML = buildPage();
+  attachEvents();
+}
+
+function buildPage() {
+  switch(state.page) {
+    case 'login':     return buildLogin();
+    case 'register':  return buildRegister();
+    case 'otp':       return buildOTP();
+    case 'forgot':    return buildForgot();
+    case 'reset':     return buildReset();
+    case 'dashboard': return buildDashboard();
+    default:          return buildLogin();
+  }
+}
+
+// ── Shared helpers ─────────────────────────────────────────────────────────
+const themeBtn = () => `<button class="ttoggle" onclick="toggleTheme()">${state.theme==='dark'?'☀️':'🌙'}</button>`;
+
+function card(inner, wide=false) {
+  return `
+  <div class="scene" data-theme="${state.theme}">
+    ${themeBtn()}
+    <div class="orb orb1"></div><div class="orb orb2"></div>
+    <div class="card${wide?' wide':''}">
+      <div class="logo">
+        <div class="logo-icon">🔐</div>
+        <span class="logo-text">AuthSystem</span>
+      </div>
+      ${inner}
+    </div>
+  </div>`;
+}
+
+function eyeIcon(open) {
+  return open
+    ? `<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+    : `<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+}
+
+function googleLogo() {
+  return `<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+function buildLogin() {
+  return card(`
+    <div class="hd"><h1>Welcome back</h1><p>Sign in to your account to continue</p></div>
+    ${state.loginError ? `<div class="alert ae">⚠️ ${state.loginError}</div>` : ''}
+    <button class="btn btn-g" onclick="handleGoogleLogin()" style="margin-bottom:0">
+      ${googleLogo()} Continue with Google
+    </button>
+    <div class="div">or sign in with email</div>
+    <div class="fg">
+      <label class="lbl">Email Address</label>
+      <div class="iw"><span class="ii">✉️</span>
+        <input id="lemail" class="fi ico" type="email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Password</label>
+      <div class="iw"><span class="ii">🔑</span>
+        <input id="lpass" class="fi ico" type="${state.showPass?'text':'password'}" placeholder="Enter your password" style="padding-right:44px" autocomplete="current-password"/>
+        <button class="pt" onclick="togglePass('showPass')">${eyeIcon(state.showPass)}</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <label class="cg">
+        <input type="checkbox" id="lrem"/>
+        <div class="cc"><span class="ck">✓</span></div>
+        <span class="cl">Remember me</span>
+      </label>
+      <a class="link" onclick="goto('forgot')" style="font-size:13px;font-weight:600">Forgot password?</a>
+    </div>
+    <button class="btn btn-p" onclick="handleLogin()" id="lbtn">Sign In</button>
+    <div class="af">Don't have an account? <a onclick="goto('register')">Create one free</a></div>
+  `);
+}
+
+// ── REGISTER ───────────────────────────────────────────────────────────────
+function buildRegister() {
+  const checks = pwdChecks.map(c => ({...c, met: c.test(state.passValue)}));
+  const score = checks.filter(c=>c.met).length;
+  const si = state.passValue ? Math.min(score-1,4) : -1;
+  return card(`
+    <div class="hd"><h1>Create your account</h1><p>Join thousands of users — it's free forever</p></div>
+    ${state.registerError ? `<div class="alert ae">⚠️ ${state.registerError}</div>` : ''}
+    <div class="fg-row">
+      <div class="fg" style="margin-bottom:0">
+        <label class="lbl">Full Name</label>
+        <div class="iw"><span class="ii">👤</span>
+          <input id="rname" class="fi ico" type="text" placeholder="John Doe"/>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="lbl">Username</label>
+        <div class="iw"><span class="ii" style="font-weight:700;font-size:13px">@</span>
+          <input id="runame" class="fi ico" type="text" placeholder="johndoe"/>
+        </div>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:17px">
+      <label class="lbl">Email Address</label>
+      <div class="iw"><span class="ii">✉️</span>
+        <input id="remail" class="fi ico" type="email" placeholder="you@example.com"/>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Password</label>
+      <div class="iw"><span class="ii">🔑</span>
+        <input id="rpass" class="fi ico" type="${state.showPass?'text':'password'}" placeholder="Create a strong password" style="padding-right:44px" oninput="onPassInput(this.value)"/>
+        <button class="pt" onclick="togglePass('showPass')">${eyeIcon(state.showPass)}</button>
+      </div>
+      ${state.passValue ? `
+      <div class="ps">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:11px;color:var(--t3)">Strength</span>
+          ${si>=0?`<span style="font-size:11px;font-weight:600;color:${strengthColors[si]}">${strengthLabels[si]}</span>`:''}
+        </div>
+        <div class="ps-bar"><div class="ps-fill" style="width:${si>=0?(si+1)*20:0}%;background:${si>=0?strengthColors[si]:'transparent'}"></div></div>
+        <div class="ps-grid">${checks.map(c=>`<div class="ps-item${c.met?' met':''}"><span>${c.met?'✓':'○'}</span>${c.label}</div>`).join('')}</div>
+      </div>` : ''}
+    </div>
+    <div class="fg">
+      <label class="lbl">Confirm Password</label>
+      <div class="iw"><span class="ii">🔒</span>
+        <input id="rcpass" class="fi ico" type="${state.showConfirm?'text':'password'}" placeholder="Repeat your password" style="padding-right:44px"/>
+        <button class="pt" onclick="togglePass('showConfirm')">${eyeIcon(state.showConfirm)}</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="cg">
+        <input type="checkbox" id="rterms"/>
+        <div class="cc"><span class="ck">✓</span></div>
+        <span class="cl">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+      </label>
+    </div>
+    <button class="btn btn-p" onclick="handleRegister()">Create Account</button>
+    <div class="af">Already have an account? <a onclick="goto('login')">Sign in</a></div>
+  `, true);
+}
+
+// ── OTP ────────────────────────────────────────────────────────────────────
+function buildOTP() {
+  const mins = Math.floor(state.otpTimer/60).toString().padStart(2,'0');
+  const secs = (state.otpTimer%60).toString().padStart(2,'0');
+  const expired = state.otpTimer <= 0;
+  return card(`
+    <div style="text-align:center">
+      <div style="font-size:50px;margin-bottom:14px">📬</div>
+      <div class="hd" style="text-align:center">
+        <h1>Check your inbox</h1>
+        <p>We sent a 6-digit code to<br/><strong style="color:var(--acc)">alex@example.com</strong></p>
+      </div>
+      ${state.otpError ? `<div class="alert ae">${state.otpError}</div>` : ''}
+      <div class="otp-wrap">
+        ${state.otpValues.map((v,i)=>`
+          <input class="oi${v?' filled':''}${state.otpError?' oerr':''}" type="text" inputmode="numeric"
+            maxlength="1" value="${v}" id="oi${i}"
+            oninput="onOTPInput(${i},this.value)"
+            onkeydown="onOTPKey(event,${i})"
+            ${i===0?'autofocus':''}/>
+        `).join('')}
+      </div>
+      <div class="timer ${expired?'texp':''}">
+        ${expired
+          ? `<span style="color:var(--err)">⚠️ Code expired</span>`
+          : `⏱️ Expires in <span class="tv">${mins}:${secs}</span>`}
+      </div>
+      <button class="btn btn-p" onclick="handleOTPVerify()" ${state.otpValues.some(v=>!v)?'disabled':''} style="margin-bottom:10px">
+        Verify Email
+      </button>
+      ${expired
+        ? `<button class="btn btn-s" onclick="handleResendOTP()" style="margin-top:8px">🔄 Resend Code</button>`
+        : `<p style="font-size:13px;color:var(--t3);margin-top:8px">Didn't receive it? Check spam folder.</p>`
+      }
+      <div class="af" style="margin-top:16px"><a onclick="goto('register')">← Wrong email? Go back</a></div>
+    </div>
+  `);
+}
+
+// ── FORGOT PASSWORD ────────────────────────────────────────────────────────
+function buildForgot() {
+  if (state.forgotSent) {
+    return card(`
+      <div style="text-align:center">
+        <div style="font-size:50px;margin-bottom:14px">📨</div>
+        <div class="hd" style="text-align:center">
+          <h1>Check your email</h1>
+          <p>We've sent a password reset link.<br/>It expires in 15 minutes.</p>
+        </div>
+        <div class="alert ai">🔒 Check your spam folder if you don't see it within a minute.</div>
+        <div class="af"><a onclick="goto('login')">← Back to sign in</a></div>
+      </div>
+    `);
+  }
+  return card(`
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:50px;margin-bottom:12px">🔑</div>
+      <div class="hd" style="text-align:center;margin-bottom:0">
+        <h1>Forgot password?</h1>
+        <p>No worries — we'll send you reset instructions</p>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Email Address</label>
+      <div class="iw"><span class="ii">✉️</span>
+        <input id="femail" class="fi ico" type="email" placeholder="you@example.com" autofocus/>
+      </div>
+    </div>
+    <button class="btn btn-p" onclick="handleForgot()">Send Reset Link</button>
+    <div class="af" style="margin-top:18px"><a onclick="goto('login')">← Back to sign in</a></div>
+  `);
+}
+
+// ── RESET PASSWORD ─────────────────────────────────────────────────────────
+function buildReset() {
+  if (state.resetDone) {
+    return card(`
+      <div style="text-align:center">
+        <div style="font-size:52px;margin-bottom:14px">✅</div>
+        <h1 style="font-size:24px;font-weight:800;margin-bottom:10px">Password updated!</h1>
+        <p style="color:var(--t2);font-size:14px;margin-bottom:24px">Your password has been reset successfully.</p>
+        <button class="btn btn-p" onclick="goto('login')">Sign In Now</button>
+      </div>
+    `);
+  }
+  const checks = pwdChecks.map(c => ({...c, met: c.test(state.passValue)}));
+  return card(`
+    <div class="hd"><h1>Set new password</h1><p>Choose a strong password for your account</p></div>
+    <div class="fg">
+      <label class="lbl">New Password</label>
+      <div class="iw"><span class="ii">🔑</span>
+        <input id="npw" class="fi ico" type="${state.showPass?'text':'password'}" placeholder="Create a strong password" style="padding-right:44px" oninput="onPassInput(this.value)"/>
+        <button class="pt" onclick="togglePass('showPass')">${eyeIcon(state.showPass)}</button>
+      </div>
+      ${state.passValue ? `<div class="ps" style="margin-top:8px"><div class="ps-grid">${checks.map(c=>`<div class="ps-item${c.met?' met':''}"><span>${c.met?'✓':'○'}</span>${c.label}</div>`).join('')}</div></div>` : ''}
+    </div>
+    <div class="fg">
+      <label class="lbl">Confirm Password</label>
+      <div class="iw"><span class="ii">🔒</span>
+        <input id="cpw" class="fi ico" type="password" placeholder="Repeat your password"/>
+      </div>
+    </div>
+    <button class="btn btn-p" onclick="handleReset()">Update Password</button>
+    <div class="af"><a onclick="goto('login')">← Back to sign in</a></div>
+  `);
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+function buildDashboard() {
+  const u = state.user || FAKE_USER;
+  const initials = u.fullName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  const fmt = d => d ? new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Never';
+  return `
+  <div class="dash" data-theme="${state.theme}">
+    <div class="orb orb1"></div><div class="orb orb2"></div>
+    ${themeBtn()}
+    <div class="dash-wrap">
+      <div class="nav">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div class="logo-icon" style="width:36px;height:36px;font-size:17px">🔐</div>
+          <span class="logo-text">AuthSystem</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-s" style="width:auto;padding:8px 16px;font-size:13px" onclick="handleLogout()">↪ Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Welcome -->
+      <div class="dc welcome">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:26px">👋</span>
+          <div>
+            <div style="font-size:19px;font-weight:800;color:var(--t1)">Welcome back, ${u.fullName.split(' ')[0]}!</div>
+            <div style="font-size:13px;color:var(--t2);margin-top:2px">Last login: ${fmt(u.lastLogin)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile -->
+      <div class="dc">
+        <div class="stitle">👤 Profile</div>
+        <div class="ph">
+          <div class="av-wrap">
+            <div class="av">${u.profilePicture ? `<img src="${u.profilePicture}" alt=""/>` : initials}</div>
+            ${u.isEmailVerified ? `<div class="vbadge" title="Verified">✓</div>` : ''}
+          </div>
+          <div class="pi">
+            <div class="nm">${u.fullName}</div>
+            <div class="un">@${u.username}</div>
+            <div class="em">${u.email}</div>
+            <div class="badges">
+              ${u.isEmailVerified ? `<span class="badge bv">✓ Verified</span>` : `<span class="badge" style="background:rgba(245,158,11,.1);color:var(--warn);border:1px solid rgba(245,158,11,.2)">⚠ Unverified</span>`}
+              ${u.authProvider==='google' ? `<span class="badge bg2">🔍 Google</span>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="dc">
+        <div class="stitle">📊 Account Overview</div>
+        <div class="sg">
+          <div class="sc"><div class="sicon">📅</div><div class="slbl">Member Since</div><div class="sval">${new Date(u.createdAt).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div></div>
+          <div class="sc"><div class="sicon">🔐</div><div class="slbl">Auth Method</div><div class="sval">${u.authProvider==='google'?'🔍 Google':'📧 Email'}</div></div>
+          <div class="sc"><div class="sicon">${u.isEmailVerified?'✅':'⚠️'}</div><div class="slbl">Email Status</div><div class="sval" style="color:${u.isEmailVerified?'var(--ok)':'var(--warn)'}">${u.isEmailVerified?'Verified':'Unverified'}</div></div>
+        </div>
+      </div>
+
+      <!-- Account Details -->
+      <div class="dc">
+        <div class="stitle">⚙️ Account Details</div>
+        <div style="display:grid;gap:10px">
+          ${[
+            ['👤','Full Name',u.fullName],
+            ['🏷️','Username',`@${u.username}`],
+            ['✉️','Email',u.email],
+            ['📅','Account Created',fmt(u.createdAt)],
+            ['🕐','Last Login',fmt(u.lastLogin)],
+          ].map(([icon,lbl,val])=>`
+            <div class="row">
+              <span style="font-size:16px;min-width:20px">${icon}</span>
+              <div style="flex:1"><div class="rlbl">${lbl}</div><div class="rval">${val}</div></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="dc">
+        <div class="stitle">🔒 Security</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-s" style="width:auto;padding:9px 18px;font-size:13px" onclick="goto('forgot')">🔑 Change Password</button>
+          <button class="btn btn-s" style="width:auto;padding:9px 18px;font-size:13px;color:var(--err);border-color:rgba(239,68,68,.28)" onclick="handleLogout()">↪ Sign Out</button>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-size:12px;color:var(--t3);padding:10px 0 20px">AuthSystem — Production-ready authentication 🔐</p>
+    </div>
+  </div>`;
+}
+
+// ── Event Handlers ─────────────────────────────────────────────────────────
+function attachEvents() {
+  // Sync checkbox visual on label click
+  document.querySelectorAll('.cg').forEach(lbl => {
+    lbl.addEventListener('click', () => render());
+  });
+}
+
+function goto(page) {
+  state.loginError = '';
+  state.registerError = '';
+  state.otpError = '';
+  state.showPass = false;
+  state.showConfirm = false;
+  state.passValue = '';
+  state.forgotSent = false;
+  state.resetDone = false;
+  if (page === 'otp') { startOTPTimer(); }
+  else if (state.otpInterval) { clearInterval(state.otpInterval); state.otpInterval = null; }
+  state.page = page;
+  render();
+  window.scrollTo(0,0);
+}
+
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  render();
+}
+
+function togglePass(key) {
+  state[key] = !state[key];
+  const pass = key === 'showPass'
+    ? (document.getElementById('rpass') || document.getElementById('lpass') || document.getElementById('npw'))
+    : document.getElementById('rcpass');
+  render();
+}
+
+function onPassInput(val) {
+  state.passValue = val;
+  render();
+  // Refocus correct input
+  setTimeout(() => {
+    const el = document.getElementById('rpass') || document.getElementById('npw');
+    if (el) { el.focus(); el.value = val; el.selectionStart = el.selectionEnd = val.length; }
+  }, 0);
+}
+
+// LOGIN
+function handleLogin() {
+  const email = document.getElementById('lemail')?.value || '';
+  const pass = document.getElementById('lpass')?.value || '';
+  if (!email || !pass) { state.loginError = 'Please fill in all fields.'; render(); return; }
+  if (!/\S+@\S+\.\S+/.test(email)) { state.loginError = 'Enter a valid email address.'; render(); return; }
+  const btn = document.getElementById('lbtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Signing in...'; }
+  setTimeout(() => {
+    state.user = { ...FAKE_USER, email };
+    state.loginError = '';
+    showToast('Welcome back! 👋', 'success');
+    goto('dashboard');
+  }, 1200);
+}
+
+function handleGoogleLogin() {
+  state.user = { ...FAKE_USER, authProvider:'google', profilePicture: null };
+  showToast('Google sign-in successful! 🎉', 'success');
+  goto('dashboard');
+}
+
+// REGISTER
+function handleRegister() {
+  const name = document.getElementById('rname')?.value?.trim() || '';
+  const uname = document.getElementById('runame')?.value?.trim() || '';
+  const email = document.getElementById('remail')?.value?.trim() || '';
+  const pass = document.getElementById('rpass')?.value || '';
+  const cpass = document.getElementById('rcpass')?.value || '';
+  const terms = document.getElementById('rterms')?.checked || false;
+  if (!name||!uname||!email||!pass||!cpass) { state.registerError='Please fill in all fields.'; render(); return; }
+  if (pass !== cpass) { state.registerError='Passwords do not match.'; render(); return; }
+  if (!terms) { state.registerError='You must accept the Terms & Conditions.'; render(); return; }
+  const score = pwdChecks.filter(c=>c.test(pass)).length;
+  if (score < 5) { state.registerError='Password doesn\'t meet all requirements.'; render(); return; }
+  state.registerError = '';
+  showToast('Account created! Check your email 📬', 'success');
+  state.otpTimer = 300;
+  state.otpValues = ['','','','','',''];
+  goto('otp');
+}
+
+// OTP
+function onOTPInput(i, val) {
+  if (!/^\d*$/.test(val)) return;
+  state.otpValues[i] = val.slice(-1);
+  state.otpError = '';
+  render();
+  setTimeout(() => {
+    if (val && i < 5) {
+      const next = document.getElementById(`oi${i+1}`);
+      if (next) next.focus();
+    }
+    // Auto verify
+    if (state.otpValues.every(v=>v)) {
+      setTimeout(handleOTPVerify, 200);
+    }
+  }, 0);
+}
+
+function onOTPKey(e, i) {
+  if (e.key === 'Backspace' && !state.otpValues[i] && i > 0) {
+    state.otpValues[i-1] = '';
+    render();
+    setTimeout(()=>document.getElementById(`oi${i-1}`)?.focus(), 0);
+  }
+  if (e.key === 'ArrowLeft' && i > 0) { setTimeout(()=>document.getElementById(`oi${i-1}`)?.focus(), 0); }
+  if (e.key === 'ArrowRight' && i < 5) { setTimeout(()=>document.getElementById(`oi${i+1}`)?.focus(), 0); }
+}
+
+function handleOTPVerify() {
+  const code = state.otpValues.join('');
+  if (code.length < 6) { state.otpError = 'Please enter all 6 digits.'; render(); return; }
+  if (state.otpTimer <= 0) { state.otpError = 'Code expired. Please request a new one.'; render(); return; }
+  // Simulate: correct OTP is "123456"
+  if (code !== '123456') {
+    state.otpError = 'Incorrect code. (Hint: use 123456 in this demo)';
+    render();
+    return;
+  }
+  clearInterval(state.otpInterval);
+  state.user = { ...FAKE_USER };
+  showToast('Email verified! Welcome aboard 🎉', 'success');
+  goto('dashboard');
+}
+
+function handleResendOTP() {
+  state.otpTimer = 300;
+  state.otpValues = ['','','','','',''];
+  state.otpError = '';
+  startOTPTimer();
+  showToast('New code sent to your email!', 'success');
+  render();
+}
+
+function startOTPTimer() {
+  if (state.otpInterval) clearInterval(state.otpInterval);
+  state.otpInterval = setInterval(() => {
+    if (state.otpTimer > 0) {
+      state.otpTimer--;
+      // Only re-render timer portion if on OTP page
+      if (state.page === 'otp') {
+        const timerEl = document.querySelector('.timer');
+        if (timerEl) {
+          const mins = Math.floor(state.otpTimer/60).toString().padStart(2,'0');
+          const secs = (state.otpTimer%60).toString().padStart(2,'0');
+          if (state.otpTimer <= 0) {
+            timerEl.innerHTML = `<span style="color:var(--err)">⚠️ Code expired</span>`;
+          } else {
+            timerEl.innerHTML = `⏱️ Expires in <span class="tv">${mins}:${secs}</span>`;
+          }
+        } else { render(); }
+      }
+    } else { clearInterval(state.otpInterval); render(); }
+  }, 1000);
+}
+
+// FORGOT
+function handleForgot() {
+  const email = document.getElementById('femail')?.value || '';
+  if (!email || !/\S+@\S+\.\S+/.test(email)) { showToast('Please enter a valid email.', 'error'); return; }
+  const btn = event.target;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Sending...';
+  setTimeout(() => { state.forgotSent = true; showToast('Reset link sent!', 'success'); render(); }, 1000);
+}
+
+// RESET
+function handleReset() {
+  const pw = document.getElementById('npw')?.value || '';
+  const cpw = document.getElementById('cpw')?.value || '';
+  if (!pw || !cpw) { showToast('Please fill in all fields.', 'error'); return; }
+  if (pw !== cpw) { showToast('Passwords do not match.', 'error'); return; }
+  if (!pwdChecks.every(c=>c.test(pw))) { showToast('Password doesn\'t meet requirements.', 'error'); return; }
+  state.resetDone = true;
+  showToast('Password updated successfully!', 'success');
+  render();
+}
+
+// LOGOUT
+function handleLogout() {
+  state.user = null;
+  showToast('Signed out successfully', 'success');
+  goto('login');
+}
+
+// ── Toast system ───────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const colors = {success:'#10b981',error:'#ef4444',info:'#6366f1'};
+  const icons = {success:'✓',error:'✕',info:'ℹ'};
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed;top:20px;right:20px;z-index:9999;
+    display:flex;align-items:center;gap:10px;
+    background:#1e1e3a;color:#e2e8f0;
+    border:1px solid rgba(99,102,241,.3);border-radius:12px;
+    padding:13px 18px;font-size:14px;font-weight:500;font-family:inherit;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    animation:tin .3s cubic-bezier(.16,1,.3,1);max-width:320px;
+  `;
+  t.innerHTML = `<span style="width:22px;height:22px;border-radius:50%;background:${colors[type]};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${icons[type]}</span>${msg}`;
+  const style = document.createElement('style');
+  style.textContent = '@keyframes tin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}@keyframes tout{from{opacity:1}to{opacity:0;transform:translateX(20px)}}';
+  document.head.appendChild(style);
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.animation = 'tout .25s forwards'; setTimeout(()=>t.remove(),250); }, 3000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
